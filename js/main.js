@@ -152,9 +152,9 @@ document.addEventListener("DOMContentLoaded", function() {
     function getIconUrl(houseData) {
         var baseIconUrl = houseData.销售状态 === '已售' ? '_sold.png' : '.png';
         switch (houseData.风格) {
-            case '西班牙': return '/images/spain' + baseIconUrl;
-            case '法兰西': return '/images/france' + baseIconUrl;
-            case '意大利': return '/images/italy' + baseIconUrl;
+            case '西班牙': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/spain' + baseIconUrl;
+            case '法兰西': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/france' + baseIconUrl;
+            case '意大利': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/italy' + baseIconUrl;
         }
     }
 
