@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>房屋地图</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            overflow: hidden; /* 防止页面整体滚动 */
+        }
+        #sidebar {
+            width: 400px;
+            height: 100vh;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            background-color: #f4f4f4;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #map {
+            margin-left: 400px;
+            height: 100vh;
+            width: calc(100% - 400px);
+            overflow: hidden;
+        }
+        #info-box {
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: auto; /* Keeps the info box at the bottom */
+        box-sizing: border-box;
+        height: 350px; /* Fixed height for the info box */
+        overflow-y: auto; /* Enables vertical scrolling */
+        overflow-x: hidden; /* Hides horizontal scrollbar */
+    }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+        input, select, button {
+            padding: 4px;
+            margin: 2px 0; /* 添加垂直间距 */
+            width: 100%; /* 确保满宽 */
+            box-sizing: border-box; /* 内边距和边框计算在宽度内 */
+        }
+        button {
+            height: auto; /* 根据内容调整高度 */
+            min-height: 36px; /* 确保按钮足够大以便操作 */
+        }
+        #clear-filters-button {
+            margin-top: 10px; /* 按钮上方留出空间 */
+        }
+        #search-button {
+            margin-right: 5px; /* 按钮右方留出空间 */
+        }
+        .button-group {
+            display: flex; /* 启用flex布局 */
+            justify-content: space-between; /* 按钮之间平均分布空间 */
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="input-group">
+            <input type="text" id="search-input" placeholder="通过ID搜索（例如：B52）">
+            <div class="button-group">
+                <button id="search-button">搜索</button>
+                <button id="clear-search-button">清除搜索</button>
+            </div>
+        </div>
+        <h3>筛选选项</h3>
+        <div class="input-group">
+            <label for="style-filter">风格：</label>
+            <select id="style-filter">
+                <option value="">选择风格</option>
+                <!-- JavaScript动态填充选项 -->
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="type-filter">户型：</label>
+            <select id="type-filter">
+                <option value="">选择户型</option>
+                <!-- JavaScript动态填充选项 -->
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="status-filter">销售状态：</label>
+            <select id="status-filter">
+                <option value="">选择状态</option>
+                <!-- JavaScript动态填充选项 -->
+            </select>
+        </div>
+        <button id="clear-filters-button">清除筛选</button>
+        <div id="info-box">
+            <h4>房屋详情</h4>
+            <div id="property-info">点击房屋查看详细信息。</div>
+        </div>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
