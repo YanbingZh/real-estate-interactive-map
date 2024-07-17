@@ -38,6 +38,10 @@ document.addEventListener("DOMContentLoaded", function() {
     var searchResults = L.layerGroup().addTo(map); // Properly initialize searchResults here
     var houses, geojsonData;
 
+    map.on('popupclose', function() {
+        resetInfoBox(); // Resets the info box to its default state when a popup is closed
+    });
+    
     Promise.all([
         fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/Houses.geojson').then(response => response.json()),
         fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/catalog.csv').then(response => response.text())
@@ -122,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     var customIcon = L.icon({
                         iconUrl: iconUrl,
                         iconSize: [18, 24],
-                        iconAnchor: [9, 12]
+                        iconAnchor: [9, 24]
                     });
                     var marker = L.marker(latlng, {icon: customIcon});
                     marker.on('click', function() {
@@ -183,8 +187,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 var marker = L.marker(latlng, {
                     icon: L.icon({
                         iconUrl: iconUrl,
-                        iconSize: [22, 30],
-                        iconAnchor: [11, 15]
+                        iconSize: [27.5, 37.5],
+                        iconAnchor: [13.75, 18.75]
                     })
                 }).addTo(searchResults).on('click', function() {
                     updateInfoBox(houseData);
