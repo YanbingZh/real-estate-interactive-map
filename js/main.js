@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var houses, geojsonData;
 
     Promise.all([
-        fetch('https://yanbingzh.github.io/real-estate-interactive-map/<your-repository-name>/data/Houses.geojson').then(response => response.json()),
+        fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/Houses.geojson').then(response => response.json()),
         fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/catalog.csv').then(response => response.text())
     ]).then(([geoJson, csvData]) => {
         var parsedData = Papa.parse(csvData, { header: true, dynamicTyping: true, skipEmptyLines: true });
