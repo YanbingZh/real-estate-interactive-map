@@ -41,10 +41,11 @@ document.addEventListener("DOMContentLoaded", function() {
     map.on('popupclose', function() {
         resetInfoBox(); // Resets the info box to its default state when a popup is closed
     });
+
     
     Promise.all([
-        fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/Houses.geojson').then(response => response.json()),
-        fetch('https://yanbingzh.github.io/real-estate-interactive-map/data/catalog.csv').then(response => response.text())
+        fetch('data/Houses.geojson').then(response => response.json()),
+        fetch('data/catalog.csv').then(response => response.text())
     ]).then(([geoJson, csvData]) => {
         var parsedData = Papa.parse(csvData, { header: true, dynamicTyping: true, skipEmptyLines: true });
         headers = parsedData.meta.fields;
@@ -52,7 +53,8 @@ document.addEventListener("DOMContentLoaded", function() {
         geojsonData = geoJson;
         
         populateFilters(houses, headers);
-        updateMap(geojsonData, houses);
+        addGeneralEventListeners(); // Ensure event listeners are added
+        updateMap(geojsonData, houses); // Initial map update
     });
 
     map.on('click', function() {
@@ -68,56 +70,143 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('clear-filters-button').addEventListener('click', function() {
         clearFilters();
         resetInfoBox(); // Resets the info box to its default state
+        resetFilterButtonTexts(); // New function to reset all filter button texts
     });
     document.getElementById('status-filter').addEventListener('change', () => updateMap(geojsonData, houses));
-    document.getElementById('style-filter').addEventListener('change', () => updateMap(geojsonData, houses));
-    document.getElementById('type-filter').addEventListener('change', () => updateMap(geojsonData, houses));
-    document.getElementById('status-filter').addEventListener('change', () => updateMap(geojsonData, houses));
+    
+    document.querySelectorAll('.multi-select-filter input').forEach(checkbox => {
+        checkbox.addEventListener('change', () => updateMap(geojsonData, houses));
+    });   
 
+    function populateMultiSelect(id, options) {
+        var container = document.getElementById(id);
+        container.innerHTML = ''; // Clears previous options
+        var dropdown = document.createElement('div');
+        dropdown.className = 'dropdown';
+    
+        var button = document.createElement('button');
+        button.className = 'dropbtn';
+        button.innerText = '选择'; // Default text
+        button.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent the click event from bubbling up to document
+            var isShown = dropdown.classList.contains('show');
+            closeAllDropdowns(); // Close all open dropdowns first
+            if (!isShown) {
+                dropdown.classList.add('show'); // Only open this dropdown if it was previously closed
+            }
+        });
+        dropdown.appendChild(button);
+    
+        var dropdownContent = document.createElement('div');
+        dropdownContent.className = 'dropdown-content';
+        dropdownContent.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent the click event from closing the dropdown
+        });
+    
+        options.forEach(option => {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'option-wrapper';
+    
+            var opt = document.createElement('input');
+            opt.type = 'checkbox';
+            opt.value = option.toString().trim();
+            opt.id = `${id}-${option}`;
+    
+            var label = document.createElement('label');
+            label.htmlFor = `${id}-${option}`;
+            label.textContent = option.toString().trim();
+    
+            wrapper.appendChild(opt);
+            wrapper.appendChild(label);
+            dropdownContent.appendChild(wrapper);
+    
+            // Event listener to update button text when checkbox changes
+            opt.addEventListener('change', function() {
+                updateButtonText(id);
+                updateMap(geojsonData, houses); // Update map based on filter change
+            });
+        });
+    
+        dropdown.appendChild(dropdownContent);
+        container.appendChild(dropdown);
+    }
+    
+    function updateButtonText(filterId) {
+        var container = document.getElementById(filterId);
+        var dropdown = container.querySelector('.dropdown');
+        var button = dropdown.querySelector('.dropbtn');
+        var checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+        var selected = Array.from(checkboxes).map(checkbox => checkbox.nextSibling.textContent);
+    
+        if (selected.length > 0) {
+            button.innerText = selected.join(', '); // Join selected items by comma
+        } else {
+            button.innerText = '选择'; // Default text if no checkbox is checked
+        }
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    }
+
+    document.addEventListener('click', function() {
+        closeAllDropdowns();
+    });
+
+                
+    
     function populateFilters(houses, headers) {
         const filterMapping = {
             'style-filter': '风格',
             'type-filter': '户型',
-            'status-filter': '销售状态'
+            'status-filter': '销售状态',
+            'mortgage-status-filter': '抵押状态',
+            'property-nature-filter': '房源性质'
         };
     
         const houseList = Object.values(houses);
     
         Object.entries(filterMapping).forEach(([id, header]) => {
             if (headers.includes(header)) {
-                var options = new Set(houseList.map(house => house[header]).filter(Boolean));
+                var options = new Set(houseList.map(house => house[header] || '无').filter(Boolean));
                 if (header === '户型') {
-                    // Convert to array, sort numerically, and convert back to Set if necessary
                     options = new Set([...options].sort((a, b) => a - b));
                 }
-                populateSelect(id, options);
+                populateMultiSelect(id, options);
             }
         });
     }
     
-
-    function populateSelect(id, options) {
-        var select = document.getElementById(id);
-        select.innerHTML = '<option value="">选择</option>'; // Clears previous options
-        options.forEach(option => {
-            var opt = document.createElement('option');
-            opt.value = opt.textContent = option.toString().trim(); // Ensure proper string handling
-            select.appendChild(opt);
+    // Call this function after populating filters
+    function addGeneralEventListeners() {
+        document.querySelectorAll('.multi-select-filter input').forEach(checkbox => {
+            checkbox.addEventListener('change', () => updateMap(geojsonData, houses));
+        });
+    
+        document.getElementById('clear-filters-button').addEventListener('click', function() {
+            clearFilters();
+            resetInfoBox(); // Resets the info box to its default state
         });
     }
 
     function updateMap(geojsonData, houses) {
         houseLayer.clearLayers();
+        var selectedStyles = Array.from(document.querySelectorAll('#style-filter input:checked')).map(input => input.value);
+        var selectedTypes = Array.from(document.querySelectorAll('#type-filter input:checked')).map(input => input.value);
+        var selectedStatuses = Array.from(document.querySelectorAll('#status-filter input:checked')).map(input => input.value);
+        var selectedMortgageStatuses = Array.from(document.querySelectorAll('#mortgage-status-filter input:checked')).map(input => input.value);
+        var selectedPropertyNatures = Array.from(document.querySelectorAll('#property-nature-filter input:checked')).map(input => input.value);
+    
         L.geoJSON(geojsonData, {
             filter: feature => {
                 var houseData = houses[feature.properties.ID];
-                var style = document.getElementById('style-filter').value;
-                var type = document.getElementById('type-filter').value;
-                var status = document.getElementById('status-filter').value;
-
-                return (!style || houseData && houseData.风格 === style) &&
-                       (!type || houseData && houseData.户型.toString() === type) &&
-                       (!status || houseData && houseData.销售状态 === status);
+                return (!selectedStyles.length || selectedStyles.includes(houseData.风格 || '无')) &&
+                       (!selectedTypes.length || selectedTypes.includes(houseData.户型.toString() || '无')) &&
+                       (!selectedStatuses.length || selectedStatuses.includes(houseData.销售状态 || '无')) &&
+                       (!selectedMortgageStatuses.length || selectedMortgageStatuses.includes(houseData.抵押状态 || '无')) &&
+                       (!selectedPropertyNatures.length || selectedPropertyNatures.includes(houseData.房源性质 || '无'));
             },
             pointToLayer: function(feature, latlng) {
                 var houseData = houses[feature.properties.ID];
@@ -128,7 +217,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         iconSize: [18, 24],
                         iconAnchor: [9, 24]
                     });
-                    var marker = L.marker(latlng, {icon: customIcon});
+                    var marker = L.marker(latlng, { icon: customIcon });
                     marker.on('click', function() {
                         updateInfoBox(houseData);
                     });
@@ -146,19 +235,21 @@ document.addEventListener("DOMContentLoaded", function() {
             onEachFeature: function(feature, layer) {
                 var houseData = houses[feature.properties.ID];
                 if (houseData) {
-                    var popupContent = `ID: ${feature.properties.ID}<br>风格: ${houseData.风格}<br>户型: ${houseData.户型}<br>销售状态: ${houseData.销售状态}`;
-                    layer.bindPopup(popupContent);
+                    var popupContent = `ID: ${feature.properties.ID}<br>风格: ${houseData.风格 || '无'}<br>户型: ${houseData.户型 || '无'}<br>销售状态: ${houseData.销售状态 || '无'}`;
+                    layer.bindPopup(popupContent, {
+                        offset: L.point(0, -12)
+                    });
                 }
             }
         }).addTo(houseLayer);
-    }
+    }    
 
     function getIconUrl(houseData) {
         var baseIconUrl = houseData.销售状态 === '已售' ? '_sold.png' : '.png';
         switch (houseData.风格) {
-            case '西班牙': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/spain' + baseIconUrl;
-            case '法兰西': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/france' + baseIconUrl;
-            case '意大利': return 'https://yanbingzh.github.io/real-estate-interactive-map/images/italy' + baseIconUrl;
+            case '西班牙': return '/images/spain' + baseIconUrl;
+            case '法兰西': return '/images/france' + baseIconUrl;
+            case '意大利': return '/images/italy' + baseIconUrl;
         }
     }
 
@@ -207,22 +298,28 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     
-
     function clearSearch() {
         document.getElementById('search-input').value = '';
         searchResults.clearLayers();
         updateMap(geojsonData, houses);
     }
-
     
     function clearFilters() {
-        document.getElementById('style-filter').value = '';
-        document.getElementById('type-filter').value = '';
-        document.getElementById('status-filter').value = '';
+        document.querySelectorAll('.multi-select-filter input:checked').forEach(checkbox => {
+            checkbox.checked = false; // Uncheck all checkboxes
+        });
         updateMap(geojsonData, houses); // Update map to show all data since filters are cleared
     }
-
+    
     function resetInfoBox() {
         document.getElementById('property-info').innerHTML = '点击房屋查看详细信息。'; // Set a default or empty message
+    }
+
+    function resetFilterButtonTexts() {
+        var filterContainers = document.querySelectorAll('.multi-select-filter');
+        filterContainers.forEach(container => {
+            var filterId = container.id;
+            updateButtonText(filterId); // Call updateButtonText to reset the button text
+        });
     }
 });
